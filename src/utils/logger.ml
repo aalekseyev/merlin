@@ -120,3 +120,6 @@ let with_log_file file f =
     match f () with
     | v -> release (); v
     | exception exn -> release (); reraise exn
+
+type logger = { log : 'a. ('a, unit, string, unit) format4 -> 'a }
+let logger section = { log = (fun fmt -> logf section "" fmt) }
