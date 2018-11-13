@@ -2711,8 +2711,7 @@ let () =
 
 let check_state_consistency () =
   Std.Hashtbl.forall !persistent_structures @@ fun name ps ->
-  not ps.loaded ||
-  match ps.cell with
+  not ps.loaded || match ps.cell with
   | None ->
     begin match find_in_path_uncap !load_path (name ^ ".cmi") with
       | _ -> false
