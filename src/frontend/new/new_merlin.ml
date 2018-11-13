@@ -1,5 +1,7 @@
 (** {1 Prepare command-line arguments} *)
 
+let {Logger. log} = Logger.for_section "New_merlin"
+
 let usage () =
   prerr_endline
     "Usage: ocamlmerlin command [options] -- [compiler flags]\n\
@@ -100,7 +102,7 @@ let run = function
               ("failure", `String str)
             | exception exn ->
               let trace = Printexc.get_backtrace () in
-              Logger.log "New_merlin.run" "Command error backtrace" "%s" trace;
+              log "run" "Command error backtrace: %s" trace;
               match Location.error_of_exn exn with
               | None | Some `Already_displayed ->
                 ("exception", `String (Printexc.to_string exn ^ "\n" ^ trace))
@@ -115,12 +117,14 @@ let run = function
           let timing = ("total", total_time) ::
                        ("query", (total_time -. pipeline_time)) :: timing in
           let notify (sec,str) = `String (Printf.sprintf "%s: %s" sec str) in
+          let format_timing (k,v) = (k, `Int (int_of_float (0.5 +. v))) in
           `Assoc [
             "class", `String class_; "value", message;
             "notifications", `List (List.rev_map notify !notifications);
-            "timing", `Assoc (List.map (fun (k,v) -> k, `Float v) timing)
-          ];
+            "timing", `Assoc (List.map format_timing timing)
+          ]
         in
+        log "run(result)" "%a" Logger.json (fun () -> json);
         begin match Mconfig.(config.merlin.protocol) with
           | `Sexp -> Sexp.tell_sexp print_string (Sexp.of_json json)
           | `Json -> Std.Json.to_channel stdout json
@@ -141,12 +145,12 @@ let run env wd args =
       try Sys.chdir wd; Printf.sprintf "changed directory to %S" wd
       with _ -> Printf.sprintf "cannot change working directory to %S" wd
   in
-  let log, sections =
+  let log_file, sections =
     match Std.String.split_on_char_ ',' (Sys.getenv "MERLIN_LOG") with
     | (value :: sections) -> (Some value, sections)
     | [] -> (None, [])
     | exception Not_found -> (None, [])
   in
-  Logger.with_log_file log ~sections @@ fun () ->
-  Logger.log "Ocamlmerlin_server" "Server.process_request" "%s" wd_msg;
+  Logger.with_log_file log_file ~sections @@ fun () ->
+  log "run" "%s" wd_msg;
   run args
