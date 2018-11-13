@@ -27,8 +27,6 @@
 )* }}} *)
 
 open Std
-open Sturgeon_stub
-open Cursor
 
 module I = Parser_raw.MenhirInterpreter
 
@@ -38,11 +36,11 @@ type kind =
   (*| MLL | MLY*)
 
 module Dump = struct
-  let token = Parser_printer.print_token
+  (*let token = Parser_printer.print_token*)
 
   let symbol = Parser_printer.print_symbol
 
-  let position pos =
+  (*let position pos =
     let l1, c1 = Lexing.split_pos pos in
     Printf.sprintf "%d:%d" l1 c1
 
@@ -88,7 +86,7 @@ module Dump = struct
       Option.iter ~f:(element k) (I.top env);
       aux (I.pop env)
     in
-    aux (Some env)
+    aux (Some env)*)
 end
 
 module R = Mreader_recover.Make
@@ -136,7 +134,7 @@ let eof_token = (Parser_raw.EOF, Lexing.dummy_pos, Lexing.dummy_pos)
 
 let errors_ref = ref []
 
-let resume_parse nav =
+let resume_parse (*nav*) =
   let rec normal acc tokens = function
     | I.InputNeeded env as checkpoint ->
       let token, tokens = match tokens with
@@ -152,7 +150,7 @@ let resume_parse nav =
           Msupport.raise_error exn;
           let token = match acc with
             | [] -> assert false
-              (* Parser raised error before parsing anything *)
+            (* Parser raised error before parsing anything *)
             | (_, token) :: _ -> token
           in
           enter_error acc token tokens env
@@ -179,8 +177,8 @@ let resume_parse nav =
       normal ((Correct checkpoint, token) :: acc) tokens checkpoint
 
   and enter_error acc token tokens env =
-    R.dump nav ~wrong:token ~rest:tokens env;
-    let candidates = R.generate null env in
+    (*R.dump nav ~wrong:token ~rest:tokens env;*)
+    let candidates = R.generate (*null*) env in
     let explanation =
       Mreader_explain.explain env token
         candidates.R.popped candidates.R.shifted
@@ -194,7 +192,7 @@ let resume_parse nav =
       | [] -> eof_token, []
     in
     let acc' = ((Recovering candidates, token) :: acc) in
-    match R.attempt null candidates token with
+    match R.attempt (*null*) candidates token with
     | `Fail ->
       if tokens = [] then
         match candidates.R.final with
@@ -218,17 +216,17 @@ let seek_step steps tokens =
   in
   aux [] (steps, tokens)
 
-let parse initial nav steps tokens initial_pos =
+let parse initial (*nav*) steps tokens initial_pos =
   let acc, tokens = seek_step steps tokens in
   let step =
     match acc with
     | (step, _) :: _ -> step
     | [] -> Correct (initial initial_pos)
   in
-  let acc, result = resume_parse nav acc tokens step in
+  let acc, result = resume_parse (*nav*) acc tokens step in
   List.rev acc, result
 
-let run_parser warnings nav lexer previous kind =
+let run_parser warnings (*nav*) lexer previous kind =
   Msupport.catch_errors warnings errors_ref @@ fun () ->
   let tokens = Mreader_lexer.tokens lexer in
   let initial_pos = Mreader_lexer.initial_position lexer in
@@ -240,7 +238,7 @@ let run_parser warnings nav lexer previous kind =
     in
     let steps, result =
       let state = Parser_raw.Incremental.implementation in
-      parse state nav steps tokens initial_pos in
+      parse state (*nav*) steps tokens initial_pos in
     `Structure steps, `Implementation result
   | MLI ->
     let steps = match previous with
@@ -249,15 +247,15 @@ let run_parser warnings nav lexer previous kind =
     in
     let steps, result =
       let state = Parser_raw.Incremental.interface in
-      parse state nav steps tokens initial_pos in
+      parse state (*nav*) steps tokens initial_pos in
     `Signature steps, `Interface result
 
-let null_frame =
-  {Widget.Nav. body = null; title = null; nav = Widget.Nav.make "" ignore}
+(*let null_frame =
+  {Widget.Nav. body = null; title = null; nav = Widget.Nav.make "" ignore}*)
 
 let make warnings lexer kind =
   errors_ref := [];
-  let steps, tree = run_parser warnings null_frame lexer `None kind in
+  let steps, tree = run_parser warnings (*null_frame*) lexer `None kind in
   let errors = !errors_ref in
   errors_ref := [];
   {kind; steps; tree; errors; lexer}
@@ -266,8 +264,8 @@ let result t = t.tree
 
 let errors t = t.errors
 
-let dump_stack t k tok =
-  let find l =
+let dump_stack _t _tok =
+  (*let find l =
     match List.find ~f:(fun (_, tok') -> tok = tok') l with
     | exception Not_found -> text k "No parser"
     | Correct (I.InputNeeded env), _ ->
@@ -284,4 +282,5 @@ let dump_stack t k tok =
   in
   match t.steps with
   | `Signature l -> find l
-  | `Structure l -> find l
+    | `Structure l -> find l*)
+  ()

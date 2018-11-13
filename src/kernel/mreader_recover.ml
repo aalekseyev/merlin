@@ -1,8 +1,4 @@
 open Std
-open Sturgeon_stub
-open Cursor
-open Widget
-type cursor = Sturgeon_stub.cursor
 
 module Make
     (Parser : MenhirLib.IncrementalEngine.EVERYTHING)
@@ -31,11 +27,11 @@ module Make
        val nullable : 'a Parser.nonterminal -> bool
      end)
     (Dump : sig
-       val token   : Parser.token -> string
+       (*val token   : Parser.token -> string*)
        val symbol  : Parser.xsymbol -> string
-       val element : cursor -> Parser.element -> unit
-       val item    : cursor -> Parser.item -> unit
-       val env     : cursor -> _ Parser.env -> unit
+       (*val element : Parser.element -> string
+         val item    : Parser.item -> string
+         val env     : _ Parser.env -> string*)
      end) =
 struct
 
@@ -69,11 +65,11 @@ struct
     external inj : 'a checkpoint -> 'a Parser.checkpoint = "%identity"
   end
 
-  let env_state env =
+  (*let env_state env =
     match Parser.top env with
     | None -> -1
     | Some (Parser.Element (state, _, _, _)) ->
-      Parser.number state
+      Parser.number state*)
 
   let feed_token ~allow_reduction token env =
     let rec aux allow_reduction = function
@@ -118,7 +114,7 @@ struct
     in
     { line; min_col; max_col; env }
 
-  let attempt k r token =
+  let attempt r token =
     let _, startp, _ = token in
     let line, col = Lexing.split_pos startp in
     let more_indented candidate =
@@ -128,7 +124,7 @@ struct
       line = candidate.line ||
       (candidate.min_col <= col && col <= candidate.max_col)
     in
-    let print_candidates xs =
+    (*let print_candidates xs =
       printf k "{ ";
       let p x =
         printf k "%d@%d:%d-%d" (env_state x.env) x.line x.min_col x.max_col in
@@ -138,23 +134,23 @@ struct
           p x; List.iter ~f:(fun x -> printf k ", "; p x) xs;
       end;
       printf k "}"
-    in
-    printf k "Recovery from %s @ %d:%d\n"
+    in*)
+    (*printf k "Recovery from %s @ %d:%d\n"
       (let (t,_,_) = token in Dump.token t) line col;
     printf k "Candidates = ";
     print_candidates recoveries;
-    printf k "\n";
+    printf k "\n";*)
     let recoveries = List.take_while ~f:same_indented recoveries in
-    printf k "Selected = ";
+    (*printf k "Selected = ";
     print_candidates recoveries;
-    printf k "\n";
+    printf k "\n";*)
     let rec aux = function
       | [] -> `Fail
       | x :: xs -> match feed_token ~allow_reduction:true token x.env with
         | `Fail ->
-          if not (is_closed k) then
+          (*if not (is_closed k) then
             printf k "Couldn't resume %d with %S.\n"
-              (env_state x.env) (let (t,_,_) = token in Dump.token t);
+              (env_state x.env) (let (t,_,_) = token in Dump.token t);*)
           aux xs
         | `Recovered (checkpoint, _) -> `Ok (checkpoint, x.env)
         | `Accept v ->
@@ -182,7 +178,7 @@ struct
     | Recovery.One actions -> actions
     | Recovery.Select f -> f (nth_state env Recovery.depth.(st))
 
-  let generate k (type a) (env : a Parser.env) =
+  let generate (type a) (env : a Parser.env) =
     let module E = struct
       exception Result of a
     end in
@@ -190,8 +186,8 @@ struct
     let rec aux acc env =
       match Parser.top env with
       | None -> None, acc
-      | Some (Parser.Element (state, _, _startp, endp) as elt) ->
-        Dump.element k elt;
+      | Some (Parser.Element (state, _, _startp, endp)) ->
+        (*Dump.element k elt;*)
         Logger.log "recover" "decide state" (string_of_int (Parser.number state));
         let actions = decide env in
         let candidate0 = candidate env in
@@ -202,16 +198,16 @@ struct
           | Recovery.R prod ->
             Logger.log "recover" "eval Reduce" "";
             let prod = Parser.find_production prod in
-            begin try
+            (*begin try*)
                 Parser.force_reduction prod env
-              with exn ->
+            (* with exn ->
                 printf k "Error %S in force_reduction, reducing:\n"
                   (Printexc.to_string exn);
                 Dump.item k (prod, -1);
                 printf k "In environment:\n";
                 Dump.env k env;
                 raise exn
-            end
+            end*)
           | Recovery.S (Parser.N n as sym) ->
             let xsym = Parser.X sym in
             if !shifted = None && not (Recovery.nullable n) then
@@ -282,14 +278,14 @@ struct
     let final, candidates = aux [] env in
     (List.rev !popped, !shifted, final, candidates)
 
-  let generate k env =
-    let popped, shifted, final, candidates = generate k env in
+  let generate env =
+    let popped, shifted, final, candidates = generate env in
     let candidates = List.rev_filter candidates
         ~f:(fun t -> not (Parser.env_has_default_reduction t.env))
     in
     { popped; shifted; final; candidates = (candidate env) :: candidates }
 
-  let dump {Nav. nav; body; _} ~wrong:(t,s,_ as token) ~rest:tokens env =
+  (*let dump {Nav. nav; body; _} ~wrong:(t,s,_ as token) ~rest:tokens env =
     if not (is_closed body) then (
       let l, c = Lexing.split_pos s in
       printf body "Unexpected %S at %d:%d, " (Dump.token t) l c;
@@ -313,5 +309,5 @@ struct
       text body ".\n";
       Dump.env body env;
       text body "\n"
-    )
+    )*)
 end
