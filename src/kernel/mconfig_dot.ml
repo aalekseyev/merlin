@@ -29,7 +29,7 @@
 open Std
 open Misc
 
-let {Logger. log} = Logger.logger "Mconfig_dot"
+let {Logger. log} = Logger.for_section "Mconfig_dot"
 
 type directive = [
   | `B of string

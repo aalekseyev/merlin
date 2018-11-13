@@ -31,7 +31,7 @@ module Make(Input : sig
   val read : string -> t
   val cache_name : string
 end) = struct
-  let {Logger. log} = Logger.logger ("File_cache("^Input.cache_name^")")
+  let {Logger. log} = Logger.for_section ("File_cache("^Input.cache_name^")")
 
   let cache : (string, File_id.t * float ref * Input.t) Hashtbl.t
             = Hashtbl.create 17

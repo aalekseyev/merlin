@@ -1,5 +1,7 @@
 open Std
 
+let {Logger. log} = Logger.for_section "Mreader_recover"
+
 module Make
     (Parser : MenhirLib.IncrementalEngine.EVERYTHING)
     (Recovery : sig
@@ -188,15 +190,15 @@ struct
       | None -> None, acc
       | Some (Parser.Element (state, _, _startp, endp)) ->
         (*Dump.element k elt;*)
-        Logger.log "recover" "decide state" "%d" (Parser.number state);
+        log "decide state" "%d" (Parser.number state);
         let actions = decide env in
         let candidate0 = candidate env in
         let rec eval (env : a Parser.env) : Recovery.action -> a Parser.env = function
           | Recovery.Abort ->
-            Logger.log "recover" "eval Abort" "";
+            log "eval Abort" "";
             raise Not_found
           | Recovery.R prod ->
-            Logger.log "recover" "eval Reduce" "";
+            log "eval Reduce" "";
             let prod = Parser.find_production prod in
             (*begin try*)
                 Parser.force_reduction prod env
@@ -212,7 +214,7 @@ struct
             let xsym = Parser.X sym in
             if !shifted = None && not (Recovery.nullable n) then
               shifted := Some xsym;
-            Logger.log "recover" "eval Shift N" "%a" Dump.symbol xsym;
+            log "eval Shift N" "%a" Dump.symbol xsym;
             (* FIXME: if this is correct remove the fixme, otherwise use
                [startp] *)
             let loc = {Location. loc_start = endp; loc_end = endp; loc_ghost = true} in
@@ -221,7 +223,7 @@ struct
           | Recovery.S (Parser.T t as sym) ->
             let xsym = Parser.X sym in
             if !shifted = None then shifted := Some xsym;
-            Logger.log "recover" "eval Shift T" "%a" Dump.symbol xsym;
+            log "eval Shift T" "%a" Dump.symbol xsym;
             let loc = {Location. loc_start = endp; loc_end = endp; loc_ghost = true} in
             let v = Recovery.default_value loc sym in
             let token = (Recovery.token_of_terminal t v, endp, endp) in
@@ -231,9 +233,9 @@ struct
               | `Recovered (_,env) -> env
             end
           | Recovery.Sub actions ->
-            Logger.log "recover" "enter Sub" "";
+            log "enter Sub" "";
             let env = List.fold_left ~f:eval ~init:env actions in
-            Logger.log "recover" "leave Sub" "";
+            log "leave Sub" "";
             env
         in
         match
@@ -251,7 +253,7 @@ struct
       let Parser.Element (state, _, _, _) = Parser.stack_element stack in
       match Parser.incoming_symbol state with
       | (Parser.T term) as t1 when Recovery.can_pop term ->
-        Logger.logf "recover" "Pop" "pop %s"
+        log "Pop" "pop %s"
           (Dump.symbol (Parser.X t1));
         begin match Parser.stack_next stack with
           | None -> false
@@ -261,7 +263,7 @@ struct
                 when Parser.X t1 = Parser.X t2 ->
                 false
               | Recovery.S sym :: _ ->
-                Logger.logf "recover" "Pop" "then push %s"
+                log "Pop" "then push %s"
                   (Dump.symbol (Parser.X sym));
                 popped := Parser.X t1 :: !popped;
                 true

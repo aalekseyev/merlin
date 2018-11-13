@@ -483,7 +483,7 @@ let dispatch pipeline (type a) : a Query_protocol.t -> a =
         let path = Mreader_lexer.identifier_suffix path in
         let path = List.map ~f:(fun {Location. txt; _} -> txt) path in
         let path = String.concat ~sep:"." path in
-        Logger.log Locate.log_section "reconstructed identifier" "%s" path;
+        Locate.log "reconstructed identifier" "%s" path;
         path
     in
     if path = "" then `Invalid_context else
@@ -493,11 +493,11 @@ let dispatch pipeline (type a) : a Query_protocol.t -> a =
         ~env ~local_defs ~pos ml_or_mli path
     with
     | `Found (file, pos) ->
-      Logger.log Locate.log_section "result"
+      Locate.log "result"
         "found: %s" (Option.value ~default:"<local buffer>" file);
       `Found (file, pos)
     | otherwise ->
-      Logger.log Locate.log_section "result" "not found";
+      Locate.log "result" "not found";
       otherwise
     end
 

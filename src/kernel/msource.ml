@@ -1,7 +1,7 @@
 (* Merlin representation of a textual source code *)
 open Std
 
-let {Logger. log} = Logger.logger "Msource"
+let {Logger. log} = Logger.for_section "Msource"
 
 type t = {
   text: string;

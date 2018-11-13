@@ -49,5 +49,6 @@ val notify : section -> ('b, unit, string, unit) format4 -> 'b
 val with_notifications : (section * string) list ref -> (unit -> 'a) -> 'a
 val with_log_file : string option -> ?sections:section list -> (unit -> 'a) -> 'a
 
-type logger = { log : 'a. title -> ('a, unit, string, unit) format4 -> 'a }
-val logger : section -> logger
+type 'a printf = title -> ('a, unit, string, unit) format4 -> 'a
+type logger = { log : 'a. 'a printf }
+val for_section : section -> logger

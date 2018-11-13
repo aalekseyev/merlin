@@ -12,7 +12,7 @@
 
 open Std
 
-let {Logger. log} = Logger.logger "Pparse"
+let {Logger. log} = Logger.for_section "Pparse"
 
 type error =
   | CannotRun of string

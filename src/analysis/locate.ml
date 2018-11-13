@@ -32,9 +32,7 @@ let loadpath     = ref []
 
 let last_location = ref Location.none
 
-let log_section = "locate"
-
-let log title fmt = Logger.log log_section title fmt
+let {Logger. log} = Logger.for_section "locate"
 
 let erase_loadpath ~cwd ~new_path k =
   let str_path_list =

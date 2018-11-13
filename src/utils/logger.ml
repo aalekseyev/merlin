@@ -147,5 +147,6 @@ let with_log_file file ?(sections=[]) f =
     | v -> release (); v
     | exception exn -> release (); reraise exn
 
-type logger = { log : 'a. title -> ('a, unit, string, unit) format4 -> 'a }
-let logger section = { log = (fun title fmt -> log section title fmt) }
+type 'a printf = title -> ('a, unit, string, unit) format4 -> 'a
+type logger = { log : 'a. 'a printf }
+let for_section section = { log = (fun title fmt -> log section title fmt) }

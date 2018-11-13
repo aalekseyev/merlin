@@ -1,5 +1,7 @@
 open Std
 
+let {Logger. log} = Logger.for_section "Mtyper"
+
 type ('p,'t) item = {
   parsetree_item: 'p;
   typedtree_items: 't list * Types.signature_item list;
@@ -38,19 +40,19 @@ let pop_cache config =
   match List.assoc key !cache with
   | (state, result) ->
     cache := List.remove_assoc key !cache;
-    Logger.log "Mtyper" "pop_cache"
-      "found entry for this configuration";
+    log "pop_cache" "found entry for this configuration";
     if Mocaml.with_state state Env.check_state_consistency then (
-      Logger.log "Mtyper" "pop_cache" "consistent state, reusing";
+      log "pop_cache" "consistent state, reusing";
       `Cached (state, result)
     )
     else (
-      Logger.log "Mtyper" "pop_cache" "inconsistent state, dropping";
+      log "pop_cache" "inconsistent state, dropping";
       `Inconsistent
     )
-  | exception Not_found ->
-    Logger.log "Mtyper" "pop_cache" "nothing cached for this configuration";
-    `None
+  | exception Not_found -> (
+      log "pop_cache" "nothing cached for this configuration";
+      `None
+    )
 
 let push_cache config state t =
   let t = (t.initial_env, t.initial_snapshot, t.typedtree) in
@@ -65,8 +67,7 @@ let compatible_prefix result_items tree_items =
         && compare ritem.parsetree_item pitem = 0 ->
       aux (ritem :: acc) (ritems, pitems)
     | (_, pitems) ->
-      Logger.log "Mtyper" "compatible_prefix"
-        "reusing %d items, %d new items to type"
+      log "compatible_prefix" "reusing %d items, %d new items to type"
         (List.length acc) (List.length pitems);
       acc, pitems
   in

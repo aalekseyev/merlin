@@ -1,7 +1,7 @@
 open Std
 open Extend_protocol.Reader
 
-let { Logger. log } = Logger.logger "Mreader_extend"
+let {Logger. log} = Logger.for_section "Mreader_extend"
 
 type t = {
   name : string;
