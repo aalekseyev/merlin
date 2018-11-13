@@ -31,7 +31,7 @@ module Make
          val element : Parser.element -> string
          val item    : Parser.item -> string
          val env     : _ Parser.env -> string*)
-       val symbol  : Parser.xsymbol -> string
+       val symbol  : unit -> Parser.xsymbol -> string
      end) :
 sig
 

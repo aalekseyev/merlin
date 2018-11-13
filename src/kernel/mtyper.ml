@@ -65,8 +65,9 @@ let compatible_prefix result_items tree_items =
         && compare ritem.parsetree_item pitem = 0 ->
       aux (ritem :: acc) (ritems, pitems)
     | (_, pitems) ->
-      Logger.logf "Mtyper" "compatible_prefix"
-        "reusing %d items, %d new items to type" (List.length acc) (List.length pitems);
+      Logger.log "Mtyper" "compatible_prefix"
+        "reusing %d items, %d new items to type"
+        (List.length acc) (List.length pitems);
       acc, pitems
   in
   aux [] (result_items, tree_items)

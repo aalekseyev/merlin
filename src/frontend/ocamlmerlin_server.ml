@@ -27,8 +27,8 @@ module Server = struct
       close_with (-1);
       raise Exit
     | exception exn ->
-      Logger.log "server" "process failed"
-        (Printexc.to_string exn);
+      Logger.log "server" "process failed" "%a"
+        (fun () -> Printexc.to_string) exn;
       close_with (-1)
 
   let server_accept merlinid server =

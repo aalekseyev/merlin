@@ -15,20 +15,20 @@ type t = {
 let print () t = t.name
 
 let incorrect_behavior fn t =
-  log "%s: Extension %S has incorrect behavior" fn t.name
+  log fn "Extension %S has incorrect behavior" t.name
 
 let stop t =
   if t.stopped then
-    log "Mreader_extend.stop %a: already closed" print t
+    log "stop" "%a: already closed" print t
   else (
-    log "Mreader_extend.stop %a" print t;
+    log "stop" "%a" print t;
     t.stopped <- true;
     Extend_driver.stop t.driver
   )
 
 let stop_finalise t =
   if not t.stopped then (
-    log "leaked process %s" t.name;
+    log "stop_finalise" "leaked process %s" t.name;
     stop t
   )
 
@@ -48,7 +48,7 @@ let load_source t config source =
 let start name args config source =
   let section = "(ext)" ^ name in
   let notify str = Logger.notify section "%s" str in
-  let debug str = Logger.log "reader" section str in
+  let debug str = Logger.log "reader" section "%s" str in
   let driver = Extend_driver.run ~notify ~debug name in
   let process = { name; args; config; source; driver; stopped = false } in
   Gc.finalise stop_finalise process;
@@ -59,7 +59,7 @@ let parsetree = function
   | Structure str -> `Implementation str
 
 let parse ?for_completion t =
-  log "parse ?for_completion:%a %a"
+  log "parse" "?for_completion:%a %a"
     (Option.print Msource.print_position) for_completion
     print t;
   assert (not t.stopped);
@@ -82,7 +82,7 @@ let parse ?for_completion t =
     None
 
 let reconstruct_identifier pos t =
-  log "Mreader_extend.reconstruct_identifier %a %a"
+  log "reconstruct_identifier" "%a %a"
     Lexing.print_position pos print t;
   match Extend_driver.reader t.driver (Req_get_ident_at pos) with
   | Res_get_ident_at ident -> Some ident
@@ -120,7 +120,7 @@ let clean_tree =
   | Pretty_toplevel_phrase (Parsetree.Ptop_dir _) as tree -> tree
 
 let print_pretty tree t =
-  log "print_pretty TODO %a" print t;
+  log "print_pretty" "TODO %a" print t;
   let tree = clean_tree tree in
   match Extend_driver.reader t.driver (Req_pretty_print tree) with
   | Res_pretty_print str -> Some str
@@ -129,7 +129,7 @@ let print_pretty tree t =
     None
 
 let print_outcomes ts t =
-  log "print_outcomes TODO %a" print t;
+  log "print_outcomes" "TODO %a" print t;
   match ts with
   | [] -> Some []
   | ts -> match Extend_driver.reader t.driver (Req_print_outcome ts) with
@@ -139,7 +139,7 @@ let print_outcomes ts t =
       None
 
 let print_outcome o t =
-  log "print_outcome TODO %a" print t;
+  log "print_outcome" "TODO %a" print t;
   match Extend_driver.reader t.driver (Req_print_outcome [o]) with
   | Res_print_outcome [o] -> Some o
   | _ ->

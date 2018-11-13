@@ -38,15 +38,16 @@
 type title = string
 type section = string
 
-val log    : section -> title -> string -> unit
-val logf   : section -> title -> ('b, unit, string, unit) format4 -> 'b
-val logfmt : section -> title -> (Format.formatter -> unit) -> unit
-val logj   : section -> title -> (unit -> Std.json) -> unit
+val log  : section -> title -> ('b, unit, string, unit) format4 -> 'b
+val fmt  : unit -> (Format.formatter -> unit) -> string
+val json : unit -> (unit -> Std.json) -> string
+val exn  : unit -> exn -> string
+
 val log_flush : unit -> unit
 
 val notify : section -> ('b, unit, string, unit) format4 -> 'b
 val with_notifications : (section * string) list ref -> (unit -> 'a) -> 'a
 val with_log_file : string option -> (unit -> 'a) -> 'a
 
-type logger = { log : 'a. ('a, unit, string, unit) format4 -> 'a }
+type logger = { log : 'a. title -> ('a, unit, string, unit) format4 -> 'a }
 val logger : section -> logger

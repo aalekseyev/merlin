@@ -127,12 +127,14 @@ let setup_merlin args =
   let input () = match input () with
     | None -> None
     | Some json ->
-      Logger.logj "frontend" "input" (fun () -> json);
+      Logger.log "frontend" "input" "%a"
+        Logger.json (fun () -> json);
       Some (Old_IO.request_of_json json)
   in
   let output ~notifications x =
     let json = Old_IO.json_of_response ~notifications x in
-    Logger.logj "frontend" "output" (fun () -> json);
+    Logger.log "frontend" "output" "%a"
+      Logger.json (fun () -> json);
     output json
   in
   (input, output)

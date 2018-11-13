@@ -376,8 +376,8 @@ let rec build ~local_buffer ~trie browses : t =
     | Expression _ when local_buffer ->
       build ~local_buffer ~trie (Lazy.force t.t_children)
     | ignored_node ->
-      Logger.log "typedtrie" "ignored node"
-        (string_of_node ignored_node);
+      Logger.log "typedtrie" "ignored node" "%t"
+        (fun () -> string_of_node ignored_node);
       trie
   )
 

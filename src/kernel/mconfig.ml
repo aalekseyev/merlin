@@ -242,7 +242,7 @@ let is_normalized t =
 
 let rec normalize t =
   if is_normalized t then
-    (Logger.logj "Mconfig" "normalize" (fun () -> dump t); t)
+    (Logger.log "Mconfig" "normalize" "%a" Logger.json (fun () -> dump t); t)
   else normalize (normalize_step t)
 
 let load_dotmerlins ~filenames t =
@@ -763,10 +763,10 @@ let build_path config = (
     then dirs
     else config.query.directory :: dirs
   in
-  Logger.logf "Mconfig" "build_path" "%d items in path, %t after deduplication"
-    (List.length result)
-    (fun () -> string_of_int (List.length (List.filter_dup result)));
-  result
+  let result' = List.filter_dup result in
+  Logger.log "Mconfig" "build_path" "%d items in path, %d after deduplication"
+    (List.length result) (List.length result');
+  result'
 )
 
 let cmt_path config = (

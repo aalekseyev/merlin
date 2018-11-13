@@ -29,6 +29,8 @@
 open Std
 open Misc
 
+let {Logger. log} = Logger.logger "Mconfig_dot"
+
 type directive = [
   | `B of string
   | `S of string
@@ -328,13 +330,12 @@ let ppx_of_package ?(predicates=[]) setup pkg =
   in
   begin match ppx with
     | None -> ()
-    | Some ppx ->
-      Logger.log ".merlin" "ppx" ppx
+    | Some ppx -> log "ppx" "%s" ppx
   end;
   begin match ppxopts with
     | [] -> ()
     | lst ->
-      Logger.logj ".merlin" "ppx options" @@ fun () ->
+      log "ppx options" "%a" Logger.json @@ fun () ->
       let f (ppx,opts) =
         `List [`String ppx; `List (List.map ~f:(fun s -> `String s) opts)]
       in
@@ -368,10 +369,8 @@ let set_findlib_path =
         | "" -> None
         | s -> Some s
       in
-      Logger.logf "Mconfig_dot" "set_findlib_path"
-        "findlib_conf = %s; findlib_path = %s\n"
-        conf
-        (String.concat ~sep:path_separator path);
+      log "set_findlib_path" "findlib_conf = %s; findlib_path = %s\n"
+        conf (String.concat ~sep:path_separator path);
       Findlib.init ?env_ocamlpath ?config ?toolchain ();
       findlib_cache := key
     end
@@ -404,10 +403,8 @@ let path_of_packages ?conf ?path ?toolchain packages =
     match
       List.filter_map invalid_packages
         ~f:(fun pkg ->
-            if is_package_optional pkg then
-              (Logger.logf "Mconfig_dot" "path_of_packages"
-                 "Uninstalled package %S" pkg;
-               None)
+            if is_package_optional pkg
+            then (log "path_of_packages" "Uninstalled package %S" pkg; None)
             else Some pkg)
     with
     | [] -> []

@@ -99,7 +99,7 @@ let run = function
               ("failure", `String str)
             | exception exn ->
               let trace = Printexc.get_backtrace () in
-              Logger.log "New_merlin.run" "Command error backtrace" trace;
+              Logger.log "New_merlin.run" "Command error backtrace" "%s" trace;
               match Location.error_of_exn exn with
               | None | Some `Already_displayed ->
                 ("exception", `String (Printexc.to_string exn ^ "\n" ^ trace))
@@ -145,5 +145,5 @@ let run env wd args =
     | exception Not_found -> None
   in
   Logger.with_log_file log @@ fun () ->
-  Logger.log "Ocamlmerlin_server" "Server.process_request" wd_msg;
+  Logger.log "Ocamlmerlin_server" "Server.process_request" "%s" wd_msg;
   run args

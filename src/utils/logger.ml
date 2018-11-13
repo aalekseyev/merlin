@@ -46,36 +46,42 @@ let log_flush () =
   | None -> ()
   | Some oc -> flush oc
 
-let log section title msg =
+let log section title fmt =
   match !destination with
-  | None -> ()
   | Some oc ->
-    output_section oc section title;
-    if msg <> "" then (
-      output_string oc msg;
-      output_char oc '\n';
-    )
+    Printf.ksprintf (fun str ->
+        output_section oc section title;
+        if str <> "" then (
+          output_string oc str;
+          if str.[String.length str - 1] <> '\n' then
+            output_char oc '\n'
+        )
+      ) fmt
+  | None ->
+    Printf.ifprintf () fmt
 
-let logf section title =
-  Printf.ksprintf (log section title)
+let fmt_buffer = Buffer.create 128
+let fmt_handle = Format.formatter_of_buffer fmt_buffer
 
-let logfmt section title f =
-  match !destination with
-  | None -> ()
-  | Some oc ->
-    output_section oc section title;
-    let ppf = Format.formatter_of_out_channel oc in
-    f ppf;
-    Format.pp_print_flush ppf ();
-    output_char oc '\n'
+let fmt () f =
+  Buffer.reset fmt_buffer;
+  begin match f fmt_handle with
+  | () -> ()
+  | exception exn ->
+    Format.fprintf fmt_handle "@\nException: %s" (Printexc.to_string exn);
+  end;
+  Format.pp_print_flush fmt_handle ();
+  let msg = Buffer.contents fmt_buffer in
+  Buffer.reset fmt_buffer;
+  msg
 
-let logj section title f =
-  match !destination with
-  | None -> ()
-  | Some oc ->
-    output_section oc section title;
-    Json.pretty_to_channel oc (f ());
-    output_char oc '\n'
+let json () f =
+  match f () with
+  | json -> Json.pretty_to_string json
+  | exception exn ->
+    Printf.sprintf "Exception: %s" (Printexc.to_string exn)
+
+let exn () exn = Printexc.to_string exn
 
 let notifications
   : (section * string) list ref option ref
@@ -83,7 +89,7 @@ let notifications
 
 let notify section =
   let tell msg =
-    log section "notify" msg;
+    log section "notify" "%s" msg;
     match !notifications with
     | None -> ()
     | Some r -> r := (section, msg) :: !r
@@ -121,5 +127,5 @@ let with_log_file file f =
     | v -> release (); v
     | exception exn -> release (); reraise exn
 
-type logger = { log : 'a. ('a, unit, string, unit) format4 -> 'a }
-let logger section = { log = (fun fmt -> logf section "" fmt) }
+type logger = { log : 'a. title -> ('a, unit, string, unit) format4 -> 'a }
+let logger section = { log = (fun title fmt -> log section title fmt) }

@@ -31,7 +31,7 @@ module Make(Input : sig
   val read : string -> t
   val cache_name : string
 end) = struct
-  let section = "File_cache("^Input.cache_name^")"
+  let {Logger. log} = Logger.logger ("File_cache("^Input.cache_name^")")
 
   let cache : (string, File_id.t * float ref * Input.t) Hashtbl.t
             = Hashtbl.create 17
@@ -41,21 +41,21 @@ end) = struct
     try
       let fid', latest_use, file = Hashtbl.find cache filename in
       if (File_id.check fid fid') then
-        Logger.logf section "read" "reusing %S" filename
+        log "read" "reusing %S" filename
       else (
-        Logger.logf section "read" "%S was updated on disk" filename;
+        log "read" "%S was updated on disk" filename;
         raise Not_found;
       );
       latest_use := Unix.time ();
       file
     with Not_found ->
     try
-      Logger.logf section "read" "reading %S from disk" filename;
+      log "read" "reading %S from disk" filename;
       let file = Input.read filename in
       Hashtbl.replace cache filename (fid, ref (Unix.time ()), file);
       file
     with exn ->
-      Logger.logf section "read" "failed to read %S (%t)"
+      log "read" "failed to read %S (%t)"
         filename (fun () -> Printexc.to_string exn);
       Hashtbl.remove cache filename;
       raise exn
@@ -69,10 +69,10 @@ end) = struct
       if !latest_use > limit &&
          File_id.check (File_id.get filename) fid
       then (
-        Logger.logf section "flush" "keeping %S" filename;
+        log "flush" "keeping %S" filename;
         invalids
       ) else (
-        Logger.logf section "flush" "removing %S" filename;
+        log "flush" "removing %S" filename;
         filename :: invalids
       )
     in

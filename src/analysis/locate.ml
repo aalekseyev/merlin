@@ -34,9 +34,7 @@ let last_location = ref Location.none
 
 let log_section = "locate"
 
-let log title msg = Logger.log log_section title msg
-let logf title fmt = Logger.logf log_section title fmt
-let logfmt title fmt = Logger.logfmt log_section title fmt
+let log title fmt = Logger.log log_section title fmt
 
 let erase_loadpath ~cwd ~new_path k =
   let str_path_list =
@@ -44,10 +42,10 @@ let erase_loadpath ~cwd ~new_path k =
       | "" ->
         (* That's the cwd at the time of the generation of the cmt, I'm
             guessing/hoping it will be the directory where we found it *)
-        log "erase_loadpath" cwd;
+        log "erase_loadpath" "%s" cwd;
         cwd
       | x ->
-        log "erase_loadpath" x;
+        log "erase_loadpath" "%s" x;
         x
     )
   in
@@ -63,7 +61,7 @@ module Fallback = struct
   let get () = !fallback
 
   let set loc =
-    logfmt "Fallback.set" (fun fmt -> Location.print_loc fmt loc);
+    log "Fallback.set" "%a" Logger.fmt (fun fmt -> Location.print_loc fmt loc);
     fallback := Some loc
 
   let reset () = fallback := None
@@ -222,7 +220,7 @@ end = struct
   let reset () = state := None
 
   let move_to ~digest file =
-    logf "File_switching.move_to" "%s" file;
+    log "File_switching.move_to" "%s" file;
     state := Some { last_file_visited = file ; digest }
 
   let where_am_i () = Option.map !state ~f:last_file_visited
@@ -343,7 +341,7 @@ exception Cmt_cache_store of Typedtrie.t
 let trie_of_cmt root =
   let open Cmt_format in
   let cached = Cmt_cache.read root in
-  logf "browse_cmts" "inspecting %s" root ;
+  log "browse_cmts" "inspecting %s" root ;
   begin match cached.Cmt_cache.location_trie with
   | Cmt_cache_store _ ->
     let digest =
@@ -395,17 +393,18 @@ let rec locate ~config ~context path trie : locate_result =
   | Typedtrie.Resolves_to (new_path, state) ->
     begin match Namespaced_path.head_exn new_path with
     | Ident (_, `Mod) ->
-      logf "locate" "resolves to %s" (Namespaced_path.to_unique_string new_path);
+      log "locate" "resolves to %s" (Namespaced_path.to_unique_string new_path);
       from_path ~config ~context:(Typedtrie.Resume state) new_path
     | _ ->
-      logf "locate" "new path (%s) is not a real path"
+      log "locate" "new path (%s) is not a real path"
         (Namespaced_path.to_unique_string new_path);
-      logfmt "locate (typedtrie dump)" (fun fmt -> Typedtrie.dump fmt trie);
+      log "locate (typedtrie dump)" "%a"
+        Logger.fmt (fun fmt -> Typedtrie.dump fmt trie);
       Other_error (* incorrect path *)
     end
 
 and from_path ~config ~context path : locate_result =
-  log "from_path" (Namespaced_path.to_unique_string path) ;
+  log "from_path" "%s" (Namespaced_path.to_unique_string path) ;
   match Namespaced_path.head_exn path with
   | Ident (fname, `Mod) ->
     let path = Namespaced_path.peal_head_exn path in
@@ -455,7 +454,7 @@ and from_path ~config ~context path : locate_result =
         match Utils.find_file ~config ~with_fallback:true file with
         | Some cmt_file -> browse_cmt cmt_file
         | None ->
-          logf "from_path" "failed to locate the cmt[i] of '%s'" fname;
+          log "from_path" "failed to locate the cmt[i] of '%s'" fname;
           File_not_found file
       )
     end
@@ -508,41 +507,41 @@ let find_source ~config loc =
   in
   match Utils.find_all_matches ~config ~with_fallback file with
   | [] ->
-    logf "find_source" "failed to find %S in source path (fallback = %b)"
+    log "find_source" "failed to find %S in source path (fallback = %b)"
        filename with_fallback ;
-    logf "find_source" "looking for %S in %S" (File.name file) dir ;
+    log "find_source" "looking for %S in %S" (File.name file) dir ;
     begin match Utils.find_file_with_path ~config ~with_fallback file [dir] with
     | Some source -> Found source
     | None ->
-      logf "find_source" "Trying to find %S in %S directly" fname dir;
+      log "find_source" "Trying to find %S in %S directly" fname dir;
       try Found (Misc.find_in_path [dir] fname)
       with _ -> Not_found file
     end
   | [ x ] -> Found x
   | files ->
-    logf (sprintf "find_source(%s)" filename)
+    log (sprintf "find_source(%s)" filename)
       "multiple matches in the source path : %s"
       (String.concat ~sep:" , " files);
     try
       match File_switching.source_digest () with
       | None ->
-        logf "find_source"
+        log "find_source"
           "... no source digest available to select the right one" ;
         raise Not_found
       | Some digest ->
-        logf "find_source"
+        log "find_source"
           "... trying to use source digest to find the right one" ;
-        logf "find_source" "Source digest: %s" (Digest.to_hex digest) ;
+        log "find_source" "Source digest: %s" (Digest.to_hex digest) ;
         Found (
           List.find files ~f:(fun f ->
             let fdigest = Digest.file f in
-            logf "find_source" "  %s (%s)" f (Digest.to_hex fdigest) ;
+            log "find_source" "  %s (%s)" f (Digest.to_hex fdigest) ;
             fdigest = digest
           )
         )
     with Not_found ->
-      logf "find_source" "... using heuristic to select the right one" ;
-      logf "find_source" "we are looking for a file named %s in %s" fname dir ;
+      log "find_source" "... using heuristic to select the right one" ;
+      log "find_source" "we are looking for a file named %s in %s" fname dir ;
       let rev = String.reverse (Misc.canonicalize_filename ~cwd:dir fname) in
       let lst =
         List.map files ~f:(fun path ->
@@ -679,7 +678,7 @@ end = struct
             raise (Found (path, Namespaced_path.of_path ~namespace:`Type path, loc))
         with Not_found -> ()
       ) ;
-      logf "lookup" "   ... not in the environment" ;
+      log "lookup" "   ... not in the environment" ;
       None
     with Found x ->
       Some x
@@ -698,7 +697,7 @@ let locate ~config ~ml_or_mli ~path ~lazy_trie ~pos ~str_ident loc =
   File_switching.reset ();
   Fallback.reset ();
   Preferences.set ml_or_mli;
-  logf "locate"
+  log "locate"
     "present in the environment, walking up the typedtree looking for '%s'"
     (Namespaced_path.to_unique_string path);
   try
@@ -753,7 +752,7 @@ let cursor_on_constructor_name ~cursor:pos
 let inspect_pattern ~pos ~lid p =
   let open Typedtree in
   let open Context in
-  logfmt "inspect_context"
+  log "inspect_context" "%a" Logger.fmt
     (fun fmt -> Format.fprintf fmt "current pattern is: %a"
                   (Printtyped.pattern 0) p);
   match p.pat_desc with
@@ -787,12 +786,12 @@ let inspect_expression ~pos ~lid e : Context.t =
 let inspect_context browse lid pos : Context.t option =
   match Mbrowse.enclosing pos browse with
   | [] ->
-    logf "inspect_context" "no enclosing around: %a" Lexing.print_position pos;
+    log "inspect_context" "no enclosing around: %a" Lexing.print_position pos;
     Some Unknown
   | enclosings ->
     let open Browse_raw in
     let node = Browse_tree.of_browse enclosings in
-    logf "inspect_context" "current node is: %s"
+    log "inspect_context" "current node is: %s"
       (string_of_node node.Browse_tree.t_node);
     match node.Browse_tree.t_node with
     | Pattern p -> inspect_pattern ~pos ~lid p
@@ -825,8 +824,8 @@ let from_string ~config ~env ~local_defs ~pos switch path =
     log "from_string" "already at origin, doing nothing" ;
     `At_origin
   | Some ctxt ->
-    logf "inspect_context" "inferred context: %s" (Context.to_string ctxt);
-    logf "from_string" "looking for the source of '%s' (prioritizing %s files)"
+    log "inspect_context" "inferred context: %s" (Context.to_string ctxt);
+    log "from_string" "looking for the source of '%s' (prioritizing %s files)"
       path (match switch with `ML -> ".ml" | `MLI -> ".mli") ;
     let_ref loadpath (Mconfig.cmt_path config) @@ fun () ->
     match
@@ -863,7 +862,7 @@ let get_doc ~config ~env ~local_defs ~comments ~pos =
       | None ->
         `Found ({ Location. loc_start=pos; loc_end=pos ; loc_ghost=true }, None)
       | Some ctxt ->
-        logf "get_doc" "looking for the doc of '%s'" path ;
+        log "get_doc" "looking for the doc of '%s'" path ;
         from_longident ~config ~pos ~env ~lazy_trie ctxt `MLI lid
       end
   with
@@ -877,7 +876,7 @@ let get_doc ~config ~env ~local_defs ~comments ~pos =
         let {Cmt_cache. cmt_infos; _ } = Cmt_cache.read cmt_path in
         cmt_infos.Cmt_format.cmt_comments
     in
-    logfmt "get_doc" (fun fmt ->
+    log "get_doc" "%a" Logger.fmt (fun fmt ->
         Format.fprintf fmt "looking around %a inside: [\n"
           Location.print_loc !last_location;
         List.iter comments ~f:(fun (c, l) ->

@@ -1,13 +1,12 @@
 open Mconfig
 
 let change_directory dir =
-  Logger.log "Mppx" "changing_directory" dir;
+  Logger.log "Mppx" "changing_directory" "%s" dir;
   match Sys.chdir dir with
   | () -> true
   | exception exn ->
-    Logger.logf "Mppx" "changing directory"
-      "change_directory %S failed with %t" dir
-      (fun () -> Printexc.to_string exn);
+    Logger.log "Mppx" "changing directory"
+      "change_directory %S failed with %a" dir Logger.exn exn;
     false
 
 
@@ -47,10 +46,10 @@ let rewrite cfg parsetree =
     restore ();
     cfg, parsetree
   | exception exn ->
-    Logger.logf "Mppx" "rewrite" "failed with %t" (fun () ->
-        match Location.error_of_exn exn with
-        | None | Some `Already_displayed -> Printexc.to_string exn
-        | Some (`Ok err) -> err.Location.msg
+    Logger.log "Mppx" "rewrite" "failed with %t"
+      (fun () -> match Location.error_of_exn exn with
+         | None | Some `Already_displayed -> Printexc.to_string exn
+         | Some (`Ok err) -> err.Location.msg
       );
     Msupport.raise_error exn;
     restore ();

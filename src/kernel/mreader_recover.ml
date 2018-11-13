@@ -28,7 +28,7 @@ module Make
      end)
     (Dump : sig
        (*val token   : Parser.token -> string*)
-       val symbol  : Parser.xsymbol -> string
+       val symbol  : unit -> Parser.xsymbol -> string
        (*val element : Parser.element -> string
          val item    : Parser.item -> string
          val env     : _ Parser.env -> string*)
@@ -188,7 +188,7 @@ struct
       | None -> None, acc
       | Some (Parser.Element (state, _, _startp, endp)) ->
         (*Dump.element k elt;*)
-        Logger.log "recover" "decide state" (string_of_int (Parser.number state));
+        Logger.log "recover" "decide state" "%d" (Parser.number state);
         let actions = decide env in
         let candidate0 = candidate env in
         let rec eval (env : a Parser.env) : Recovery.action -> a Parser.env = function
@@ -212,7 +212,7 @@ struct
             let xsym = Parser.X sym in
             if !shifted = None && not (Recovery.nullable n) then
               shifted := Some xsym;
-            Logger.log "recover" "eval Shift N" (Dump.symbol xsym);
+            Logger.log "recover" "eval Shift N" "%a" Dump.symbol xsym;
             (* FIXME: if this is correct remove the fixme, otherwise use
                [startp] *)
             let loc = {Location. loc_start = endp; loc_end = endp; loc_ghost = true} in
@@ -221,7 +221,7 @@ struct
           | Recovery.S (Parser.T t as sym) ->
             let xsym = Parser.X sym in
             if !shifted = None then shifted := Some xsym;
-            Logger.log "recover" "eval Shift T" (Dump.symbol xsym);
+            Logger.log "recover" "eval Shift T" "%a" Dump.symbol xsym;
             let loc = {Location. loc_start = endp; loc_end = endp; loc_ghost = true} in
             let v = Recovery.default_value loc sym in
             let token = (Recovery.token_of_terminal t v, endp, endp) in
