@@ -47,7 +47,7 @@ val log_flush : unit -> unit
 
 val notify : section -> ('b, unit, string, unit) format4 -> 'b
 val with_notifications : (section * string) list ref -> (unit -> 'a) -> 'a
-val with_log_file : string option -> (unit -> 'a) -> 'a
+val with_log_file : string option -> ?sections:section list -> (unit -> 'a) -> 'a
 
 type logger = { log : 'a. title -> ('a, unit, string, unit) format4 -> 'a }
 val logger : section -> logger
