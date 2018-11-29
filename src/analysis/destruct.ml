@@ -89,7 +89,7 @@ let rec gen_patterns ?(recurse=true) env type_expr =
     begin match Env.find_type_descrs path env with
     | [], [] ->
       if recurse then from_type_decl env path type_expr else
-      raise (Not_allowed (sprintf "non-destructible type: %s" (Path.last path)))
+      raise (Not_allowed (sprintf "indestructible type: %s" (Path.last path)))
     | [], labels ->
       let lst =
         List.map labels ~f:(fun lbl_descr ->
@@ -165,7 +165,7 @@ and from_type_decl env path texpr =
   | None ->
     try Hashtbl.find Predef_types.tbl path env texpr
     with Not_found ->
-      raise (Not_allowed (sprintf "non-destructible type: %s" (Path.last path)))
+      raise (Not_allowed (sprintf "indestructible type: %s" (Path.last path)))
 
 
 let rec needs_parentheses = function
